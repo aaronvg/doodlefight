@@ -120,7 +120,7 @@ public class GameWorld {
 		this.listener = listener;
 		rand = new Random();
 		generateLevel(); // sets up box2dWorld.
-		this.bob = new Ghosty(10, 84, world2);
+		this.bob = new Ghosty(8, 7, world2);
 
 		this.heightSoFar = 0;
 		this.score = 0;

@@ -1,0 +1,22 @@
+package entities;
+
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.maps.tiled.TiledMap;
+
+public class GameCamera extends OrthographicCamera {
+	
+	float mapWidth;
+	float mapHeight;
+	public GameCamera(float x, float y, TiledMap map) {
+		super(x, y);
+		
+		
+	}
+	
+	public void init() {
+		
+		
+		
+	}
+	
+}

@@ -108,7 +108,7 @@ public class Ghosty extends DynamicGameObject {
 		// physics update
 		
 
-		double deg = Math.toRadians(0);
+	/*	double deg = Math.toRadians(0);
 		if (Gdx.input.isTouched()) {
 			dampingCounter += .06f;
 			if (dampingCounter > DAMPING) {
@@ -141,6 +141,7 @@ public class Ghosty extends DynamicGameObject {
 
 		position.x = circleBody.getPosition().x;
 		position.y = circleBody.getPosition().y;
+		*/
 		/*
 		if (velocity.y > 0 && state != GHOST_STATE_HIT) {
 			if (state != GHOST_STATE_JUMP) {

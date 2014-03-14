@@ -1,0 +1,20 @@
+package entities;
+
+import com.badlogic.gdx.math.Vector3;
+
+/** Functions as the camera object that is updated by the game logic.
+ * The world renderer will update the camera according to what the data
+ * in this object is.
+ * @author Aaron
+ *
+ */
+
+public class CamData {
+
+	Vector3 position;
+	boolean init;
+	public CamData(Vector3 pos) {
+		position = pos;
+		init = true;
+	}
+}

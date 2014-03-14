@@ -1,0 +1,41 @@
+package entities;
+
+import java.util.ArrayList;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.math.Vector2;
+
+
+/**
+ * This class controls all input to the game.
+ * It also converts drawings to box2D objects and manages
+ * drawn paths.
+ * @author Aaron
+ *
+ */
+public class DrawerManager {
+	ArrayList<Vector2> points;
+	boolean newPath;
+	public DrawerManager() {
+		newPath = true;
+		points = new ArrayList<Vector2>();
+	}
+	
+	
+	public void update() {
+		if(Gdx.input.isTouched()) {
+			// Start drawing path.
+			
+			
+		}
+		else {
+			// if we were drawing a path, save it now into our buffer.
+		}
+	}
+	
+	
+	
+	
+	
+	
+}

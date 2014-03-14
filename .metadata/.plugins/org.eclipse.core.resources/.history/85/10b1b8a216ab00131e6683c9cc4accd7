@@ -1,0 +1,11 @@
+package entities;
+
+
+/**
+ * This class controls all input to the game.
+ * @author Aaron
+ *
+ */
+public class DrawerManager {
+
+}

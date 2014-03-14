@@ -1,0 +1,61 @@
+package entities;
+
+import java.util.ArrayList;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
+
+
+/**
+ * This class controls all input to the game.
+ * It also converts drawings to box2D objects and manages
+ * drawn paths.
+ * @author Aaron
+ *
+ */
+public class DrawerManager {
+	ArrayList<Vector3> currPoints;
+	ArrayList<Line> paths;
+	ShapeRenderer shaper;
+	boolean newPath;
+	public DrawerManager() {
+		newPath = true;
+		currPoints = new ArrayList<Vector3>();
+		paths = new ArrayList<Line>();
+	}
+	
+	
+	public void update(GameCamera cam, SpriteBatch batch) {
+		if(Gdx.input.isTouched()) {
+			// Start drawing path.
+			Vector3 point = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+			cam.unproject(point);
+			currPoints.add(point);
+		}
+		else {
+			// if we were drawing a path, save it now into our buffer.
+			Line l = new Line(new ArrayList<Vector3>(currPoints));
+			paths.add(l);
+			currPoints.clear();
+		}
+		
+		batch.begin() {
+			
+		}
+		
+	}
+	
+	
+	private class Line {
+		ArrayList<Vector3> points;
+		public Line(ArrayList<Vector3> points) {
+			this.points = points;
+			
+		}
+	}
+	
+	
+	
+}
