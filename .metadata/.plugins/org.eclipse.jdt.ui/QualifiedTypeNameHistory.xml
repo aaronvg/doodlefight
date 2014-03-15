@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <qualifiedTypeNameHistroy>
 <fullyQualifiedTypeName name="android.view.WindowManager"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.graphics.OrthographicCamera"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.InputProcessor"/>
+<fullyQualifiedTypeName name="lineDrawing.LineDrawing"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.graphics.g2d.SpriteBatch"/>
+<fullyQualifiedTypeName name="entities.DrawingManager"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.graphics.Color"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.utils.Array"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer20"/>
+<fullyQualifiedTypeName name="entities.GameCamera"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.graphics.GL10"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.graphics.GL20"/>
+<fullyQualifiedTypeName name="mdesl.swipe.simplify.ResolverCopy"/>
+<fullyQualifiedTypeName name="java.util.ArrayList"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.Gdx"/>
+<fullyQualifiedTypeName name="gameWorld.WorldRenderer"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType"/>
 </qualifiedTypeNameHistroy>

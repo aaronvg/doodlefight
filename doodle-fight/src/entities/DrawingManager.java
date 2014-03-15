@@ -96,17 +96,17 @@ public class DrawingManager {
 
 		tristrip.clear();
 		texcoord.clear();
-		if (currPoints.size() < 2)
-			return;
-		// Smooth out current line
-		// smooth(currPoints, smoothLine);
+		
 
-		batchSize = generate(currPoints, 1);
-		b = generate(currPoints, -1);
-		draw(cam);
+		if(currPoints.size()>= 2) {
+			batchSize = generate(currPoints, 1);
+			b = generate(currPoints, -1);
+			draw(cam);
+			
+		}
 		
 		// Activated only once per drawing. (not touched, and theres an arrow waiting in the buffer)
-		if(!Gdx.input.isTouched() && newArrow == true) {
+		if(!Gdx.input.isTouched() && newArrow == true && currPoints.size() >=2) {
 			Strip s = new Strip(batchSize, new Array<Vector2>(tristrip));
 			strips.add(s);
 			Gdx.app.log("arrow", "Total " + strips.size());
@@ -115,6 +115,12 @@ public class DrawingManager {
 		
 		draw2(cam);
 		
+		
+		
+		//if (currPoints.size() < 2)
+				//	return;
+				// Smooth out current line
+				// smooth(currPoints, smoothLine);
 		// draw the rest of the paths.
 	/*	for(int i =0; i < paths.size(); i++)
 		{
