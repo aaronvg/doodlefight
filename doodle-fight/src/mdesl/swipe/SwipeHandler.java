@@ -31,10 +31,13 @@ public class SwipeHandler extends InputAdapter {
 
 	private boolean isDrawing = false;
 
+	int maxInputPoints;
+
 	private SwipeResolver simplifier = new ResolverRadialChaikin();
 	private Array<Vector2> simplified;
 
 	public SwipeHandler(int maxInputPoints) {
+		this.maxInputPoints = maxInputPoints;
 		this.inputPoints = new FixedList<Vector2>(maxInputPoints, Vector2.class);
 		simplified = new Array<Vector2>(true, maxInputPoints, Vector2.class);
 		resolve(); // copy initial empty list
@@ -52,7 +55,7 @@ public class SwipeHandler extends InputAdapter {
 
 	public ArrayList<Vector2> input2() {
 		ArrayList<Vector2> arr = new ArrayList<Vector2>();
-		for(int i =0; i < inputPoints.size; i++) {
+		for (int i = 0; i < inputPoints.size; i++) {
 			arr.add(inputPoints.get(i));
 		}
 		return arr;
@@ -115,6 +118,10 @@ public class SwipeHandler extends InputAdapter {
 				&& (inputPoints.size > 1 || len < initialDistance))
 			return false;
 
+		
+		//if(inputPoints.size > 5)
+		//	return false;
+		
 		// add new point
 		inputPoints.insert(v);
 
@@ -122,6 +129,7 @@ public class SwipeHandler extends InputAdapter {
 
 		// simplify our new line
 		resolve();
+
 		return true;
 	}
 }

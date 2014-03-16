@@ -16,6 +16,8 @@
 
 package gameWorld;
 
+import java.util.ArrayList;
+
 import mdesl.swipe.SwipeHandler;
 import mdesl.swipe.mesh.SwipeTriStrip;
 import box2DLights.PointLight;
@@ -23,9 +25,6 @@ import box2DLights.RayHandler;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL10;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -46,7 +45,6 @@ import com.badlogic.gdx.maps.objects.TextureMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Circle;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
@@ -158,7 +156,6 @@ public class WorldRenderer {
 		followY = 0f;
 		shapeRender = new ShapeRenderer();
 
-
 		ghostTexture = new Texture("data/ghost_fixed.png");
 		ghostRegion = new TextureRegion(ghostTexture, 0, 0, 64, 64);
 		originX = 1 / 48f * ghostTexture.getWidth() / 2f;
@@ -220,10 +217,10 @@ public class WorldRenderer {
 		swipe = new SwipeHandler(10);
 
 		// minimum distance between two points
-		swipe.minDistance = 10; //10
+		swipe.minDistance = 50; // 10
 
 		// minimum distance between first and second point
-		swipe.initialDistance = 10; //10
+		swipe.initialDistance = 50; // 10
 
 		// we will use a texture for the smooth edge, and also for stroke
 		// effects
@@ -245,25 +242,19 @@ public class WorldRenderer {
 		// cam.position.y,
 		// cam.viewportWidth * cam.zoom, cam.viewportHeight * cam.zoom);
 
-		
-
-		
-		
 		cam.moveToPlayer();
 		cam.update();
-		
 
 		renderBackground();
 		renderObjects();
 		swipeDraw();
-	
-	
+
 	}
 
 	void swipeDraw() {
-		
+
 		// the endcap scale
-		 tris.endcap = .4f;
+		tris.endcap = .4f;
 
 		// the thickness of the line
 		tris.thickness = .5f;
@@ -275,27 +266,27 @@ public class WorldRenderer {
 		tris.color = Color.BLACK;
 
 		// render the triangles to the screen
-		//tris.draw(cam);
+		// tris.draw(cam);
 
 		// uncomment to see debug lines
-		// drawDebug();
+		drawDebug();
 
-		 drawingManager.update(cam, batch);
+		drawingManager.update(cam, batch);
 	}
-	
+
+	ArrayList<Vector2> outline = new ArrayList<Vector2>();
 	// optional debug drawing..
 	void drawDebug() {
 		Array<Vector2> input = swipe.input();
 
 		// draw the raw input
-		//shapes.setProjectionMatrix(cam.combined);
 		shapes.begin(ShapeType.Line);
 		shapes.setColor(Color.GRAY);
 		for (int i = 0; i < input.size - 1; i++) {
 			Vector2 p = input.get(i);
 			Vector2 p2 = input.get(i + 1);
 			shapes.line(p.x, p.y, p2.x, p2.y);
-			//Gdx.app.log("point", "real " + p.y);
+			// Gdx.app.log("point", "real " + p.y);
 		}
 		shapes.end();
 
@@ -310,11 +301,10 @@ public class WorldRenderer {
 		}
 		shapes.end();
 
-		// render our perpendiculars
 		shapes.begin(ShapeType.Line);
 		Vector2 perp = new Vector2();
 
-		for (int i = 1; i < input.size - 1; i++) {
+		for (int i = 0; i < input.size - 1; i++) {
 			Vector2 p = input.get(i);
 			Vector2 p2 = input.get(i + 1);
 
@@ -323,9 +313,71 @@ public class WorldRenderer {
 			perp.set(perp.y, -perp.x);
 			perp.scl(10f);
 			shapes.line(p.x, p.y, p.x + perp.x, p.y + perp.y);
+
 			perp.scl(-1f);
+
 			shapes.setColor(Color.BLUE);
-			shapes.line(p.x, p.y, p.x + perp.x, p.y + perp.y);
+			shapes.line(p.x, p.y, p.x + perp.x, p.y + perp.y); // p.x + perp.x
+																// is the point
+																// we want.
+																// (bottom)
+		}
+		shapes.end();
+
+		// calculate the outline
+		ArrayList<Vector2> temp;
+		temp = drawingManager.getNextArrow();
+		if(temp.size() > 0) {
+			outline = temp;
+			world.createArrow(outline);
+		}
+/*
+		for (int i = 0; i < input.size - 1; i++) {
+			if (i < input.size - 1) {
+				Vector2 p = input.get(i);
+				Vector2 p2 = input.get(i + 1);
+
+				perp.set(p).sub(p2).nor();
+				perp.set(perp.y, -perp.x);
+				perp.scl(10f);
+
+				Vector2 perpVector = new Vector2(p.x + perp.x, p.y + perp.y);
+				outline.add(perpVector);
+			}
+		}
+		for (int i = input.size - 1 -  1; i >= 0; i--) {
+			if(i == input.size - 1 - 1) {
+				Vector2 a = input.get(input.size - 1);
+				outline.add(a); // this would be the arrowhead.
+			}
+			Vector2 p = input.get(i);
+			Vector2 p2 = input.get(i + 1);
+
+			perp.set(p).sub(p2).nor();
+			perp.set(perp.y, -perp.x);
+			perp.scl(10f);
+
+			perp.scl(-1f);
+			Vector2 perpVector = new Vector2(p.x + perp.x, p.y + perp.y);
+			outline.add(perpVector);
+		}
+	*/
+		shapes.setProjectionMatrix(cam.combined); // set when drawing next arrow only
+		shapes.begin(ShapeType.Filled);
+		float red = .1f;
+		for (int i = 0; i < outline.size(); i++) {
+			Vector2 p = outline.get(i);
+			red += .05f;
+			if (red > 1.0)
+				red = 1.0f;
+			if(i == outline.size()/2)
+			{
+				shapes.setColor(Color.BLUE);
+			}
+			else
+				shapes.setColor(red, 0, 0, 1);
+			shapes.circle(p.x, p.y, .2f, 10);
+
 		}
 		shapes.end();
 	}

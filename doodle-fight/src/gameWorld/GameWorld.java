@@ -22,8 +22,6 @@ import java.util.Random;
 
 import screens.GameScreen;
 
-
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -58,7 +56,6 @@ import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 
-
 public class GameWorld {
 	public interface WorldListener {
 		public void jump();
@@ -91,6 +88,7 @@ public class GameWorld {
 
 	public final Ghosty bob;
 	public final List<Coin> coins;
+	public ArrayList<Arrow> arrows;
 	// public Castle castle;
 	public final WorldListener listener;
 	public final Random rand;
@@ -106,7 +104,6 @@ public class GameWorld {
 	private Animation walk;
 	private Animation jump;
 
-
 	float dampingCounter;
 
 	Box2DDebugRenderer debugRenderer;
@@ -114,9 +111,9 @@ public class GameWorld {
 	World world2;
 	MapBodyBuilder mapBuilder;
 
-
 	public GameWorld(WorldListener listener) {
 		this.coins = new ArrayList<Coin>();
+		arrows = new ArrayList<Arrow>();
 		this.listener = listener;
 		rand = new Random();
 		generateLevel(); // sets up box2dWorld.
@@ -150,11 +147,14 @@ public class GameWorld {
 	public void update(float deltaTime, float accelX) {
 		count++;
 		updateBob(deltaTime, accelX);
-
+		for(Arrow a : arrows) {
+			a.update(deltaTime);
+		}
 		if (bob.state != Bob.BOB_STATE_HIT)
 			checkCollisions();
 		checkGameOver();
 		world2.step(1 / 60f, 4, 2); // 6 2
+
 	}
 
 	private void updateBob(float deltaTime, float accelX) {
@@ -295,6 +295,84 @@ public class GameWorld {
 				}
 			}
 		}
+	}
+
+	public boolean checkConcave(ArrayList<Vector2> polygon) {
+		for (int i = 0; i < polygon.size() - 3; i++) {
+			Vector2 a = polygon.get(i);
+			Vector2 b = polygon.get(i + 1);
+			Vector2 c = polygon.get(i + 2);
+			if (((b.x - a.x) * (c.y - b.y)) - ((c.x - b.x) * (b.y - a.y)) > 0)
+				return true;
+
+		}
+
+		return false;
+	}
+
+	public void createArrow(ArrayList<Vector2> polygon) {
+		PolygonShape poly = new PolygonShape();
+		
+		if(polygon.size() > 3) {
+		Arrow arrow = new Arrow(polygon.get(polygon.size() / 2).x,   polygon.get(polygon.size() / 2).y, world2, polygon);
+		
+		arrows.add(arrow);
+		}
+		
+		// If it's concave, it's bad...
+		//	if (checkConcave(polygon)) {
+		//		Gdx.app.log("concave", "this is concave :(");
+		//	}
+
+		//	else {
+
+		/*	Vector2[] vertices = new Vector2[polygon.size()];
+			for (int i = polygon.size() - 1; i >= 0; i--) {
+				vertices[i] = new Vector2(polygon.get(i));
+			}
+
+			// try float vertices
+			float[] verts = new float[polygon.size() * 2];
+			int index = 0;
+			for (int i = 0; i < polygon.size(); i++) {
+
+				verts[index] = polygon.get(i).x;
+				verts[index + 1] = polygon.get(i).y;
+				Gdx.app.log("vertices", "vertex " + verts[index] + " "
+						+ verts[index + 1]);
+				index += 2;
+			}
+			// poly.set(verts);
+			Gdx.app.log("vertices", "size " + vertices.length);
+			//poly.set(vertices);
+			
+			//ChainShape chain = new ChainShape();
+			//chain.createChain(vertices);
+	 		poly.dispose();
+			*/
+			
+/*
+			BodyDef bd = new BodyDef();
+			bd.type = BodyType.DynamicBody;
+			bd.bullet = true;
+			FixtureDef fd = new FixtureDef();
+			fd.shape = chain; // set the fixture to this shape
+			fd.restitution = .3f;
+			fd.density = 1.0f;
+			fd.friction = .5f;
+
+			Body body = world2.createBody(bd);
+			body.createFixture(fd);
+			world2.setGravity(new Vector2(0, -1));
+			*/
+			
+			
+			
+			
+
+			
+	//	}
+
 	}
 
 	private class MapBodyBuilder {

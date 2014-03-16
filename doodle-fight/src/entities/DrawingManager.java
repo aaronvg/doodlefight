@@ -58,23 +58,10 @@ public class DrawingManager {
 
 	int b;
 	boolean newArrow = false;
+
 	public void update(GameCamera cam, SpriteBatch batch) {
-		/*if (Gdx.input.isTouched()) {
-			// Start drawing path.
-			Vector3 point = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
-			cam.unproject(point);
-			currPoints.add(new Vector2(point.x, point.y));
-		} else {
-			// if we were drawing a path, save it now into our buffer.
-			if(currPoints.size() > 0) {
-				Line l = new Line(new ArrayList<Vector2>(currPoints));
-				paths.add(l);
-				currPoints.clear();
-			}
-		}
-		*/
 
-
+		// If input is touched, we're drawing the current path.
 		if (Gdx.input.isTouched()) {
 			newArrow = true;
 			// Start drawing path. save it.
@@ -85,87 +72,86 @@ public class DrawingManager {
 				cam.unproject(point);
 				currPoints.set(i, new Vector2(point.x, point.y));
 			}
-		} else {
-			// if we were drawing a path, save it now into our buffer.
-			if (currPoints.size() > 0) {
-				Line l = new Line(new ArrayList<Vector2>(currPoints));
-				paths.add(l);
-				//currPoints.clear();
-			}
 		}
 
+	
 		tristrip.clear();
 		texcoord.clear();
-		
-
-		if(currPoints.size()>= 2) {
+		// If our current path is greater than 2, we can generate data for it
+		// and draw it.
+		if (currPoints.size() >= 2) {
+			
 			batchSize = generate(currPoints, 1);
 			b = generate(currPoints, -1);
 			draw(cam);
-			
+
 		}
-		
-		// Activated only once per drawing. (not touched, and theres an arrow waiting in the buffer)
-		if(!Gdx.input.isTouched() && newArrow == true && currPoints.size() >=2) {
+
+		// Activated only once per drawing. (not touched, and theres an arrow
+		// waiting in the buffer)
+		// If input is not touched, and there are valid/greater than 2 points in
+		// our buffer,
+		// we can save this as a strip.
+		if (!Gdx.input.isTouched() && newArrow == true
+				&& currPoints.size() >= 2) {
 			Strip s = new Strip(batchSize, new Array<Vector2>(tristrip));
 			strips.add(s);
 			Gdx.app.log("arrow", "Total " + strips.size());
 			newArrow = false;
-		}
-		
-		draw2(cam);
-		
-		
-		
-		//if (currPoints.size() < 2)
-				//	return;
-				// Smooth out current line
-				// smooth(currPoints, smoothLine);
-		// draw the rest of the paths.
-	/*	for(int i =0; i < paths.size(); i++)
-		{
-			currPoints = paths.get(i).points;
-			tristrip.clear();
-			texcoord.clear();
-			if (currPoints.size() < 2)
-				return;
-			// Smooth out current line
-			// smooth(currPoints, smoothLine);
-			batchSize = generate(currPoints, 1);
 			
-			draw(cam);
-		}*/
+			// Add another path
+			Line l = new Line(getArrowPolygon(currPoints));
+			// Line l = new Line(new ArrayList<Vector2>(currPoints));
+			paths.add(l);
+		}
 
-		/*shaper.setProjectionMatrix(cam.combined);
-		
-		// Draw the current line (realtime drawing)
-		shaper.begin(ShapeType.Line);
-		for(int i = 0; i < smoothLine.size() - 1; i++) {
-			
-			shaper.line(smoothLine.get(i), smoothLine.get(i + 1));
-			
-		}
-		shaper.end();
-		
-		
-		// Draw all previous lines.
-		for (int i = 0; i < paths.size(); i++) {
-			shaper.begin(ShapeType.Line);
-			ArrayList<Vector2> points = paths.get(i).points;
-			for(int j = 0; j < points.size() - 1; j++) {
-				shaper.line(points.get(j), points.get(j+1));
-				
-			}
-			
-			shaper.end();
-		}
-		*/
+		draw2(cam);
+
 	}
 
-	// TODO: simply make an array of tristrips, which we already calculate every frame.
+	public ArrayList<Vector2> getArrowPolygon(ArrayList<Vector2> input) {
+		ArrayList<Vector2> newArrow = new ArrayList<Vector2>();
+		
+		Vector2 perp = new Vector2();
+		for (int i = 0; i < input.size() - 1; i++) {
+			if (i < input.size() - 1) {
+				Vector2 p = input.get(i);
+				Vector2 p2 = input.get(i + 1);
+
+				perp.set(p).sub(p2).nor();
+				perp.set(perp.y, -perp.x);
+				perp.scl(.5f);
+
+				Vector2 perpVector = new Vector2(p.x + perp.x, p.y + perp.y);
+				newArrow.add(perpVector);
+			}
+		}
+		for (int i = input.size() - 1 - 1; i >= 0; i--) {
+			if(i == input.size() - 1 - 1) {
+				Vector2 a = input.get(input.size() - 1);
+				newArrow.add(a); // this would be the arrowhead.
+			}
+			
+			Vector2 p = input.get(i);
+			Vector2 p2 = input.get(i + 1);
+
+			perp.set(p).sub(p2).nor();
+			perp.set(perp.y, -perp.x);
+			perp.scl(.5f);
+
+			perp.scl(-1f);
+			Vector2 perpVector = new Vector2(p.x + perp.x, p.y + perp.y);
+			newArrow.add(perpVector);
+		}
+		return newArrow;
+	}
+
+	// TODO: simply make an array of tristrips, which we already calculate every
+	// frame.
 	// on touch up: add the tristrip array to our array of tristrips.
-	// now in this draw method, iterate through ALL the arrays, not just the first one, and
-	//repeat the algorithm.
+	// now in this draw method, iterate through ALL the arrays, not just the
+	// first one, and
+	// repeat the algorithm.
 	public void draw(GameCamera cam) {
 		if (tristrip.size <= 0)
 			return;
@@ -176,22 +162,21 @@ public class DrawingManager {
 				gl20.begin(cam.combined, GL20.GL_TRIANGLE_STRIP);
 			}
 			Vector2 point = tristrip.get(i);
-			//Vector2 tc = texcoord.get(i);
+			// Vector2 tc = texcoord.get(i);
 			gl20.color(color.r, color.g, color.b, color.a);
-			//gl20.texCoord(tc.x, 0f);
+			// gl20.texCoord(tc.x, 0f);
 			gl20.vertex(point.x, point.y, 0f);
 		}
 		gl20.end();
 	}
-	
-	
+
 	public void draw2(GameCamera cam) {
 		int size;
-		Gdx.app.log("draw", "strips size " + strips.size());
-		for(int j = 0; j < strips.size(); j++) {
+		//Gdx.app.log("draw", "strips size " + strips.size());
+		for (int j = 0; j < strips.size(); j++) {
 			Array<Vector2> strip = strips.get(j).array;
 			size = strips.get(j).batchSize;
-			
+
 			if (strip.size <= 0)
 				return;
 			gl20.begin(cam.combined, GL20.GL_TRIANGLE_STRIP);
@@ -201,23 +186,36 @@ public class DrawingManager {
 					gl20.begin(cam.combined, GL20.GL_TRIANGLE_STRIP);
 				}
 				Vector2 point = strip.get(i);
-				//Vector2 tc = texcoord.get(i);
+				// Vector2 tc = texcoord.get(i);
 				gl20.color(color.r, color.g, color.b, color.a);
-				//gl20.texCoord(tc.x, 0f);
+				// gl20.texCoord(tc.x, 0f);
 				gl20.vertex(point.x, point.y, 0f);
 			}
 			gl20.end();
-			
-			
-			
-			
-		}
-		
-		
-	}
-	
-	
 
+		}
+
+	}
+
+	int arrowIndex = 0;
+
+	public ArrayList<Vector2> getNextArrow() {
+		ArrayList<Vector2> a;
+		//Gdx.app.log("paths", "size " + paths.size());
+		if (paths.size() > 0 && arrowIndex < paths.size()) {
+			a = paths.get(arrowIndex).points;
+			arrowIndex++;
+		}
+		else {
+			a = new ArrayList<Vector2>();
+		}
+		return a;
+	}
+
+	
+	
+	
+	
 	public static int iterations = 2;
 	public static float simplifyTolerance = 35f;
 
@@ -287,22 +285,23 @@ public class DrawingManager {
 		}
 	}
 
-	
-	// TODO: make the arrow not follow the finger. meaning the points that are there
-	// should stay there. Just stop adding more after certain number of points (don't do the insertion thing)
+	// TODO: make the arrow not follow the finger. meaning the points that are
+	// there
+	// should stay there. Just stop adding more after certain number of points
+	// (don't do the insertion thing)
 	private int generate(ArrayList<Vector2> currPoints2, int mult) {
 		int c = tristrip.size;
-		if (endcap <= 0) {
+		//if (endcap <= 0) {
 		//	tristrip.add(currPoints2.get(0)); // front tip
-		} else {
-			Vector2 p = currPoints2.get(0);
-			Vector2 p2 = currPoints2.get(1);
-			perp.set(p).sub(p2).mul(endcap);
-			tristrip.add(new Vector2(p.x + perp.x, p.y + perp.y));
-		}
+		//} else {
+		//	Vector2 a = currPoints2.get(0);
+		//	Vector2 a2 = currPoints2.get(1);
+		//	perp.set(a).sub(a2).mul(endcap);
+		//	tristrip.add(new Vector2(a.x + perp.x, a.y + perp.y));
+		//}
 		texcoord.add(new Vector2(0f, 0f));
 
-		for (int i = 1; i < currPoints2.size() - 1; i++) {
+		for (int i = 0; i < currPoints2.size() - 1; i++) {
 			Vector2 p = currPoints2.get(i);
 			Vector2 p2 = currPoints2.get(i + 1);
 
@@ -333,7 +332,7 @@ public class DrawingManager {
 
 		// final point
 		if (endcap <= 0) {
-			tristrip.add(currPoints2.get(currPoints2.size() - 1));  //back tip
+			tristrip.add(currPoints2.get(currPoints2.size() - 1)); // back tip
 		} else {
 			Vector2 p = currPoints2.get(currPoints2.size() - 2);
 			Vector2 p2 = currPoints2.get(currPoints2.size() - 1);
@@ -344,18 +343,73 @@ public class DrawingManager {
 		texcoord.add(new Vector2(0f, 0f));
 		return tristrip.size - c;
 	}
-	
-	
+
 	private class Strip {
 		int batchSize;
 		Array<Vector2> array;
+
 		public Strip(int b, Array<Vector2> array) {
 			batchSize = b;
 			this.array = array;
 		}
-		
-		
-		
+
 	}
 
+	/*if (Gdx.input.isTouched()) {
+	// Start drawing path.
+	Vector3 point = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+	cam.unproject(point);
+	currPoints.add(new Vector2(point.x, point.y));
+	} else {
+	// if we were drawing a path, save it now into our buffer.
+	if(currPoints.size() > 0) {
+		Line l = new Line(new ArrayList<Vector2>(currPoints));
+		paths.add(l);
+		currPoints.clear();
+	}
+	}
+	*/
+	// if (currPoints.size() < 2)
+	// return;
+	// Smooth out current line
+	// smooth(currPoints, smoothLine);
+	// draw the rest of the paths.
+	/*	for(int i =0; i < paths.size(); i++)
+		{
+			currPoints = paths.get(i).points;
+			tristrip.clear();
+			texcoord.clear();
+			if (currPoints.size() < 2)
+				return;
+			// Smooth out current line
+			// smooth(currPoints, smoothLine);
+			batchSize = generate(currPoints, 1);
+			
+			draw(cam);
+		}*/
+
+	/*shaper.setProjectionMatrix(cam.combined);
+	
+	// Draw the current line (realtime drawing)
+	shaper.begin(ShapeType.Line);
+	for(int i = 0; i < smoothLine.size() - 1; i++) {
+		
+		shaper.line(smoothLine.get(i), smoothLine.get(i + 1));
+		
+	}
+	shaper.end();
+	
+	
+	// Draw all previous lines.
+	for (int i = 0; i < paths.size(); i++) {
+		shaper.begin(ShapeType.Line);
+		ArrayList<Vector2> points = paths.get(i).points;
+		for(int j = 0; j < points.size() - 1; j++) {
+			shaper.line(points.get(j), points.get(j+1));
+			
+		}
+		
+		shaper.end();
+	}
+	*/
 }
