@@ -16,10 +16,6 @@
 
 package gameWorld;
 
-import java.util.ArrayList;
-
-import mdesl.swipe.SwipeHandler;
-import mdesl.swipe.mesh.SwipeTriStrip;
 import box2DLights.PointLight;
 import box2DLights.RayHandler;
 
@@ -58,10 +54,10 @@ import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.Shape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
-import com.komodo.doodlefight.Assets;
 
 import entities.DrawingManager;
 import entities.GameCamera;
+import entities.Light;
 
 public class WorldRenderer {
 
@@ -102,12 +98,7 @@ public class WorldRenderer {
 	PointLight pointLight;
 	PointLight pointLight2;
 
-	private int lightSize = 64;
-	// private int lightSize = 160;
 	Vector2 velocity;
-
-	private float upScale = 1.5f; // for example; try lightSize=128,
-									// upScale=1.5f
 
 	BitmapFont font;
 
@@ -127,28 +118,13 @@ public class WorldRenderer {
 	boolean softShadows = true;
 
 	Vector3 pos;
-
-	public final static short FILTER_CATEGORY_SCENERY = 0x0001;
-	public final static short FILTER_CATEGORY_LIGHT = 0x0002; // LIGHT PASS
-																// THROUGH
-	public static final short FILTER_CATEGORY_DONT_ABSORB_LIGHT = 0x0004;
-	public static final short FILTER_CATEGORY_LIGHT_PASS = 0x0008;
-	public final static short FILTER_MASK_SCENERY = -1;
-	public final static short FILTER_MASK_DONT_ABSORB_LIGHT = FILTER_CATEGORY_SCENERY
-			| FILTER_CATEGORY_LIGHT;
-	public final static short FILTER_MASK_ABSORB_LIGHT = FILTER_CATEGORY_SCENERY;
-	DrawingManager drawingManager;
+	Light light;
 
 	public WorldRenderer(SpriteBatch batch, GameWorld world) {
 		this.world = world;
 		this.cam = new GameCamera(FRUSTUM_WIDTH, FRUSTUM_HEIGHT, world.map);
-		// this.cam = new OrthographicCamera(FRUSTUM_WIDTH, FRUSTUM_HEIGHT);
-		// this.cam.position.set(FRUSTUM_WIDTH / 2, FRUSTUM_HEIGHT / 2, 0);
 		this.batch = batch;
-		renderer = new OrthogonalTiledMapRenderer(world.map, 1 / 70f); // the 70
-																		// is
-																		// because
-																		// each
+		renderer = new OrthogonalTiledMapRenderer(world.map, 1 / 70f); // each
 																		// tile
 																		// is
 																		// 70px
@@ -165,31 +141,17 @@ public class WorldRenderer {
 
 		dampingCounter = 0;
 		velocity = new Vector2();
+		
+		//---- input ---
+		world.multiplexer.addProcessor(cam.gestureDetector);
+		world.multiplexer.getProcessors().reverse();
+		Gdx.input.setInputProcessor(world.multiplexer);
+		
 
 		// Light setup ---------------------------
-		RayHandler.useDiffuseLight(true);
-		handler = new RayHandler(world.world2);
-		// handler.setAmbientLight(.1f, .1f, .1f, 1f);
-		handler.setAmbientLight(.8f, .8f, .8f, 1f);
-		// handler.setAmbientLight(.06f, .06f, .06f, .05f);
-		handler.setShadows(true);
-		handler.setCulling(true);
-		// handler.setBlur(true);
+		light = new Light(world.world2);
 
-		// Renders shadows
-		pointLight = new PointLight(handler, 290, new Color(1, 1, .8f, .6f),
-				15, 10, 110);
-		pointLight.setSoft(true);
-		pointLight.setSoftnessLenght(.3f);
-
-		// lights up the tiles around the player (no shadows)
-		/*pointLight2 = new PointLight(handler, 200, new Color(1, 1, .8f, .6f),
-				6, 10, 110);
-		pointLight2.setSoftnessLenght(1.5f);
-		pointLight2.setXray(true);
-		*/
 		// for debugging---------
-		// Box2D debug renderer. renders wireframes of the objects we create.
 		debugRenderer = new Box2DDebugRenderer();
 		bitmapFont = new BitmapFont();
 		bitmapFont.setUseIntegerPositions(false);
@@ -197,196 +159,20 @@ public class WorldRenderer {
 				.setFilter(TextureFilter.Linear, TextureFilter.Linear);
 		bitmapFont.setColor(Color.WHITE);
 		bitmapFont.setScale(1.0f / 48.0f);
-
-		startSwipe();
-
-	}
-
-	SwipeHandler swipe;
-
-	Texture tex;
-	ShapeRenderer shapes;
-
-	SwipeTriStrip tris;
-
-	public void startSwipe() {
-		// the triangle strip renderer
-		tris = new SwipeTriStrip();
-
-		// a swipe handler with max # of input points to be kept alive
-		swipe = new SwipeHandler(10);
-
-		// minimum distance between two points
-		swipe.minDistance = 50; // 10
-
-		// minimum distance between first and second point
-		swipe.initialDistance = 50; // 10
-
-		// we will use a texture for the smooth edge, and also for stroke
-		// effects
-		tex = new Texture("data/gradient.png");
-		tex.setFilter(TextureFilter.Linear, TextureFilter.Linear);
-
-		shapes = new ShapeRenderer();
-
-		// handle swipe input
-		Gdx.input.setInputProcessor(swipe);
-		drawingManager = new DrawingManager(swipe);
 	}
 
 	public void render() {
-		// Set lights
-		pointLight.setPosition(world.bob.position.x, world.bob.position.y);
-		// pointLight2.setPosition(world.bob.position.x, world.bob.position.y);
-		// handler.setCombinedMatrix(cam.combined, cam.position.x,
-		// cam.position.y,
-		// cam.viewportWidth * cam.zoom, cam.viewportHeight * cam.zoom);
 
 		cam.moveToPlayer();
 		cam.update();
-
 		renderBackground();
+
 		renderObjects();
-		swipeDraw();
-
-	}
-
-	void swipeDraw() {
-
-		// the endcap scale
-		tris.endcap = .4f;
-
-		// the thickness of the line
-		tris.thickness = .5f;
-
-		// generate the triangle strip from our path
-		tris.update(swipe.path());
-
-		// the vertex color for tinting, i.e. for opacity
-		tris.color = Color.BLACK;
-
-		// render the triangles to the screen
-		// tris.draw(cam);
-
-		// uncomment to see debug lines
-		drawDebug();
-
-		drawingManager.update(cam, batch);
-	}
-
-	ArrayList<Vector2> outline = new ArrayList<Vector2>();
-	// optional debug drawing..
-	void drawDebug() {
-		Array<Vector2> input = swipe.input();
-
-		// draw the raw input
-		shapes.begin(ShapeType.Line);
-		shapes.setColor(Color.GRAY);
-		for (int i = 0; i < input.size - 1; i++) {
-			Vector2 p = input.get(i);
-			Vector2 p2 = input.get(i + 1);
-			shapes.line(p.x, p.y, p2.x, p2.y);
-			// Gdx.app.log("point", "real " + p.y);
-		}
-		shapes.end();
-
-		// draw the smoothed and simplified path
-		shapes.begin(ShapeType.Line);
-		shapes.setColor(Color.RED);
-		Array<Vector2> out = swipe.path();
-		for (int i = 0; i < out.size - 1; i++) {
-			Vector2 p = out.get(i);
-			Vector2 p2 = out.get(i + 1);
-			shapes.line(p.x, p.y, p2.x, p2.y);
-		}
-		shapes.end();
-
-		shapes.begin(ShapeType.Line);
-		Vector2 perp = new Vector2();
-
-		for (int i = 0; i < input.size - 1; i++) {
-			Vector2 p = input.get(i);
-			Vector2 p2 = input.get(i + 1);
-
-			shapes.setColor(Color.LIGHT_GRAY);
-			perp.set(p).sub(p2).nor();
-			perp.set(perp.y, -perp.x);
-			perp.scl(10f);
-			shapes.line(p.x, p.y, p.x + perp.x, p.y + perp.y);
-
-			perp.scl(-1f);
-
-			shapes.setColor(Color.BLUE);
-			shapes.line(p.x, p.y, p.x + perp.x, p.y + perp.y); // p.x + perp.x
-																// is the point
-																// we want.
-																// (bottom)
-		}
-		shapes.end();
-
-		// calculate the outline
-		ArrayList<Vector2> temp;
-		temp = drawingManager.getNextArrow();
-		if(temp.size() > 0) {
-			outline = temp;
-			world.createArrow(outline);
-		}
-/*
-		for (int i = 0; i < input.size - 1; i++) {
-			if (i < input.size - 1) {
-				Vector2 p = input.get(i);
-				Vector2 p2 = input.get(i + 1);
-
-				perp.set(p).sub(p2).nor();
-				perp.set(perp.y, -perp.x);
-				perp.scl(10f);
-
-				Vector2 perpVector = new Vector2(p.x + perp.x, p.y + perp.y);
-				outline.add(perpVector);
-			}
-		}
-		for (int i = input.size - 1 -  1; i >= 0; i--) {
-			if(i == input.size - 1 - 1) {
-				Vector2 a = input.get(input.size - 1);
-				outline.add(a); // this would be the arrowhead.
-			}
-			Vector2 p = input.get(i);
-			Vector2 p2 = input.get(i + 1);
-
-			perp.set(p).sub(p2).nor();
-			perp.set(perp.y, -perp.x);
-			perp.scl(10f);
-
-			perp.scl(-1f);
-			Vector2 perpVector = new Vector2(p.x + perp.x, p.y + perp.y);
-			outline.add(perpVector);
-		}
-	*/
-		shapes.setProjectionMatrix(cam.combined); // set when drawing next arrow only
-		shapes.begin(ShapeType.Filled);
-		float red = .1f;
-		for (int i = 0; i < outline.size(); i++) {
-			Vector2 p = outline.get(i);
-			red += .05f;
-			if (red > 1.0)
-				red = 1.0f;
-			if(i == outline.size()/2)
-			{
-				shapes.setColor(Color.BLUE);
-			}
-			else
-				shapes.setColor(red, 0, 0, 1);
-			shapes.circle(p.x, p.y, .2f, 10);
-
-		}
-		shapes.end();
+		drawBounds();
+		light.draw(cam);
 	}
 
 	public void renderBackground() {
-	}
-
-	public void renderObjects() {
-
 		// Draw all tiles now and black background
 		shapeRender.begin(ShapeType.Filled);
 		shapeRender.setColor(new Color(.1f, .1f, .1f, 1f));
@@ -397,38 +183,51 @@ public class WorldRenderer {
 		renderer.setView(cam.combined, cam.position.x - (100), cam.position.y
 				- (20 * cam.zoom), cam.viewportWidth + 100, cam.viewportWidth
 				+ 40 * cam.zoom);
+
 		renderer.render();
 
-		// render game objects
-		batch.begin();
-		renderBob();
-		renderPlatforms();
-		// renderItems();
-		// renderCastle();
-		batch.end();
+	}
+
+	public void renderObjects() {
 
 		// Debug rendering
 		// draw fonts
 		debugRender();
-		// draw box2d world.
-		debugRenderer.render(world.world2, cam.combined);
+		debugRenderer.render(world.world2, cam.combined); // this changes some colors...
 
-		// light rendering
-		// handler.updateAndRender();
+		// TODO only create one
+		// immediatemoderenderer...
+		for (Arrow b : world.arrows) {
+			b.drawStrip(cam);
+		}
+		world.drawingManager.update(cam); // draws current line.
+
+		batch.begin();
+		for (Arrow a : world.arrows) {
+			a.draw(cam, batch);
+		}
+		renderBob();
+		batch.end();
 	}
 
+	
+	public void drawBounds() {
+		
+		Vector2 start = new Vector2(FRUSTUM_WIDTH / 3, 0); //10 is the drawbound.
+		Vector2 end = new Vector2(FRUSTUM_WIDTH / 3, 20);
+		
+		shapeRender.begin(ShapeType.Line);
+		shapeRender.setColor(Color.GRAY);
+		shapeRender.setProjectionMatrix(cam.combined);
+		shapeRender.line(start, end  );
+		shapeRender.end();
+	}
+	
+	
 	public void debugRender() {
 		batch.begin();
 		float x = cam.position.x;
-		/*bitmapFont.setColor(shaderSelection==ShaderSelection.Default?Color.YELLOW:Color.WHITE);
-		x += bitmapFont.draw(batch, "1=Default Shader", x, cam.position.y).width;
-		bitmapFont.setColor(shaderSelection==ShaderSelection.Ambiant?Color.YELLOW:Color.WHITE);
-		x += bitmapFont.draw(batch, " 2=Ambient Light", x, cam.position.y).width;
-		bitmapFont.setColor(shaderSelection==ShaderSelection.Light?Color.YELLOW:Color.WHITE);
-		x += bitmapFont.draw(batch, " 3=Light Shader", x, cam.position.y).width;
-		bitmapFont.setColor(shaderSelection==ShaderSelection.Final?Color.YELLOW:Color.WHITE);
-		x += bitmapFont.draw(batch, " 4=Final Shader", x, cam.position.y).width;
-		x = cam.position.x;
+		/*
 		bitmapFont.setColor(lightMove?Color.YELLOW:Color.WHITE);
 		x += bitmapFont.draw(batch, "click=light control (" +lightMove+ ")", x, cam.position.y-bitmapFont.getLineHeight()).width;
 		bitmapFont.setColor(lightOscillate?Color.YELLOW:Color.WHITE);
@@ -441,19 +240,6 @@ public class WorldRenderer {
 	}
 
 	private void renderBob() {
-		/*TextureRegion keyFrame;
-		switch (world.bob.state) {
-		case Bob.BOB_STATE_FALL:
-			keyFrame = Assets.bobFall.getKeyFrame(world.bob.stateTime);
-			break;
-		case Bob.BOB_STATE_JUMP:
-			keyFrame = Assets.bobJump.getKeyFrame(world.bob.stateTime);
-			break;
-		case Bob.BOB_STATE_HIT:
-		default:
-			keyFrame = Assets.bobHit;
-		}*/
-
 		batch.draw(ghostRegion, world.bob.position.x - .7f,
 				world.bob.position.y - .64f, originX, originY, textureWidth,
 				textureHeight, 1, 1, 0, false);
@@ -462,76 +248,6 @@ public class WorldRenderer {
 				world.bob.position2.y - 1.5f, originX, originY,
 				textureWidth * .5f, textureHeight * .5f, 1, 1,
 				-world.bob.angleBaby + 180, false);
-
-		// batch.draw(ghostRegion, world.bob.position.x - .2f,
-		// world.bob.position.y - .2f, originX, originY, textureWidth,
-		// textureHeight, 1, 1, world.sensor.getAzimuth(), false);
-
-		/*	float side = world.bob.velocity.x < 0 ? -1 : 1;
-			if (side < 0) { // the -1 is to render a bit higher than usual {
-				// batch.draw(keyFrame, world.bob.position.x + 0.5f + .4f,
-				// world.bob.position.y - 0.5f + .5f, side * 1, 1);
-
-				batch.draw(keyFrame, world.bob.position.x, world.bob.position.y,
-						.5f, .5f, (float) keyFrame.getTexture().getWidth(),
-						(float) keyFrame.getTexture().getWidth(), 1f, 1f,
-						world.sensor.getAzimuth(), false);
-			}
-
-			else {
-				// batch.draw(keyFrame, world.bob.position.x - 0.5f +.4f,
-				// world.bob.position.y - 0.5f + .5f, side * 1, 1);
-				batch.draw(keyFrame, world.bob.position.x, world.bob.position.y,
-						.5f, .5f, (float) keyFrame.getTexture().getWidth(),
-						(float) keyFrame.getTexture().getWidth(), 1f, 1f,
-						world.sensor.getAzimuth(), false);
-			}*/
-	}
-
-	private void renderPlatforms() {
-		// int len = world.platforms.size();
-		// for (int i = 0; i < len; i++) {
-		// Platform platform = world.platforms.get(i);
-		// TextureRegion keyFrame = Assets.platform;
-		// if (platform.state == Platform.PLATFORM_STATE_PULVERIZING) {
-		// keyFrame = Assets.brakingPlatform.getKeyFrame(platform.stateTime,
-		// Animation.ANIMATION_NONLOOPING);
-		// }
-		//
-		// batch.draw(keyFrame, platform.position.x - 1, platform.position.y -
-		// 0.25f, 2, 0.5f);
-		// }
-	}
-
-	private void renderItems() {
-		if (world.collision) {
-			Coin coin = new Coin(world.bob.position.x, world.bob.position.y);
-			TextureRegion keyFrame = Assets.coinAnim.getKeyFrame(
-					coin.stateTime, true);
-			batch.draw(keyFrame, coin.position.x - 0.5f,
-					coin.position.y - 0.5f, 1, 1);
-		}
-		// int len = world.springs.size();
-		// for (int i = 0; i < len; i++) {
-		// Spring spring = world.springs.get(i);
-		// batch.draw(Assets.spring, spring.position.x - 0.5f, spring.position.y
-		// - 0.5f, 1, 1);
-		// }
-		//
-		// len = world.coins.size();
-		// for (int i = 0; i < len; i++) {
-		// Coin coin = world.coins.get(i);
-		// TextureRegion keyFrame = Assets.coinAnim.getKeyFrame(coin.stateTime,
-		// Animation.ANIMATION_LOOPING);
-		// batch.draw(keyFrame, coin.position.x - 0.5f, coin.position.y - 0.5f,
-		// 1, 1);
-		// }
-	}
-
-	private void renderCastle() {
-		// Castle castle = world.castle;
-		// batch.draw(Assets.castle, castle.position.x - 1, castle.position.y -
-		// 1, 2, 2);
 	}
 
 	private class MapBodyBuilder {

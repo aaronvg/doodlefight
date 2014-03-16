@@ -20,13 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import screens.GameScreen;
-
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.Map;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.MapObjects;
@@ -45,16 +41,18 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.ChainShape;
 import com.badlogic.gdx.physics.box2d.CircleShape;
-import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.Shape;
 import com.badlogic.gdx.physics.box2d.World;
-import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
+
+import entities.DrawingManager;
+import entities.DrawingManager.ArrowData;
 
 public class GameWorld {
 	public interface WorldListener {
@@ -110,6 +108,12 @@ public class GameWorld {
 	Body circleBody;
 	World world2;
 	MapBodyBuilder mapBuilder;
+	public DrawingManager drawingManager;
+	
+	public InputMultiplexer multiplexer;
+	
+	public static int DRAWBOUND_X = Gdx.graphics.getWidth() /3;
+	
 
 	public GameWorld(WorldListener listener) {
 		this.coins = new ArrayList<Coin>();
@@ -123,6 +127,14 @@ public class GameWorld {
 		this.score = 0;
 		this.state = WORLD_STATE_RUNNING;
 		dampingCounter = bob.DAMPING;
+		
+		
+		multiplexer = new InputMultiplexer();
+		// Set up arrow generator:
+		drawingManager = new DrawingManager(multiplexer);
+		
+		
+		
 	}
 
 	private void generateLevel() {
@@ -146,9 +158,16 @@ public class GameWorld {
 
 	public void update(float deltaTime, float accelX) {
 		count++;
+		// drawingManager is updated in the renderer.
+		
+		// Check if user drew another arrow.
+		ArrowData a = drawingManager.getNextArrow();
+		if(a != null && a.points.size() > 3) {
+			createArrow(a);
+		}
 		updateBob(deltaTime, accelX);
-		for(Arrow a : arrows) {
-			a.update(deltaTime);
+		for(Arrow b : arrows) {
+			b.update(deltaTime);
 		}
 		if (bob.state != Bob.BOB_STATE_HIT)
 			checkCollisions();
@@ -306,18 +325,23 @@ public class GameWorld {
 				return true;
 
 		}
-
 		return false;
 	}
 
-	public void createArrow(ArrayList<Vector2> polygon) {
-		PolygonShape poly = new PolygonShape();
+	public void createArrow(ArrowData a) {
 		
-		if(polygon.size() > 3) {
-		Arrow arrow = new Arrow(polygon.get(polygon.size() / 2).x,   polygon.get(polygon.size() / 2).y, world2, polygon);
-		
+		Arrow arrow = new Arrow(a, world2);
 		arrows.add(arrow);
-		}
+		
+		/*PolygonShape poly = new PolygonShape();
+		if(polygon.size() <= 3)
+			return;
+		
+	//	if(polygon.size() > 3) {
+		Arrow arrow = new Arrow(polygon.get(polygon.size() - 1).x,   polygon.get(polygon.size() - 1).y, world2, polygon);
+		
+		arrows.add(arrow);*/
+	//	}
 		
 		// If it's concave, it's bad...
 		//	if (checkConcave(polygon)) {
@@ -325,8 +349,8 @@ public class GameWorld {
 		//	}
 
 		//	else {
-
-		/*	Vector2[] vertices = new Vector2[polygon.size()];
+/*
+			Vector2[] vertices = new Vector2[polygon.size()];
 			for (int i = polygon.size() - 1; i >= 0; i--) {
 				vertices[i] = new Vector2(polygon.get(i));
 			}
@@ -346,12 +370,11 @@ public class GameWorld {
 			Gdx.app.log("vertices", "size " + vertices.length);
 			//poly.set(vertices);
 			
-			//ChainShape chain = new ChainShape();
-			//chain.createChain(vertices);
+			ChainShape chain = new ChainShape();
+			chain.createChain(vertices);
 	 		poly.dispose();
-			*/
 			
-/*
+	 		
 			BodyDef bd = new BodyDef();
 			bd.type = BodyType.DynamicBody;
 			bd.bullet = true;
@@ -364,8 +387,8 @@ public class GameWorld {
 			Body body = world2.createBody(bd);
 			body.createFixture(fd);
 			world2.setGravity(new Vector2(0, -1));
-			*/
 			
+			*/
 			
 			
 			

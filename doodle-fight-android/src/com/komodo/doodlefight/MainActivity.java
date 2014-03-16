@@ -1,6 +1,5 @@
 package com.komodo.doodlefight;
 
-import lineDrawing.LineDrawing;
 import android.os.Bundle;
 import android.view.WindowManager;
 
