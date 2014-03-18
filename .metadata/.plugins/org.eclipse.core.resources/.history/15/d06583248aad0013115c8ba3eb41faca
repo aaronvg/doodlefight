@@ -1,0 +1,362 @@
+package gameWorld;
+
+import java.util.ArrayList;
+
+import Helpers.Strip;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer20;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
+import com.badlogic.gdx.physics.box2d.CircleShape;
+import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.badlogic.gdx.physics.box2d.PolygonShape;
+import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.utils.Array;
+
+import entities.DrawingManager.ArrowData;
+import entities.GameCamera;
+
+public class Arrow extends DynamicGameObject {
+	public static final int GHOST_STATE_JUMP = 0;
+	public static final int GHOST_STATE_FALL = 1;
+	public static final int GHOST_STATE_HIT = 2;
+	public static final float GHOST_JUMP_VELOCITY = 11;
+	public static final float GHOST_MOVE_VELOCITY = 20;
+	public static final float GHOST_WIDTH = 0.8f;
+	public static final float GHOST_HEIGHT = 0.8f;
+	public static final float ACCELERATION = 5f;
+
+	Body body;
+	ArrayList<Vector2> points;
+	
+	Vector2 headPoint;
+	Vector2 tailPoint;
+	
+	Vector2 dir;
+	Vector2 dirTail;
+	Vector2 dirHead;
+
+	private Texture headTexture;
+	private TextureRegion headRegion;
+	
+	private Texture tailTexture;
+	private TextureRegion tailRegion;
+	
+	private float originX;
+	private float originY;
+	private float textureWidth;
+	private float textureHeight;
+	
+	double flyingAngle;
+	double angleHead;
+	double angleTail;
+	public Color color;
+	
+	float initialAngle;
+	
+	public Strip strip;
+	ImmediateModeRenderer20 gl20;
+	
+	
+	boolean follow = true;
+	String name = "arrow";
+	boolean freeFlight = true;
+	BodyDef circleDef;
+	public Arrow(float x, float y, World world2, ArrayList<Vector2> points) {
+		super(x, y, GHOST_WIDTH, GHOST_HEIGHT);
+		
+		color = new Color(0.63f,0.51f,0.40f,1);
+		headTexture = new Texture("data/arrow/arrowhead2.png");
+		headRegion = new TextureRegion(headTexture, 0, 0, 32, 32);
+		tailTexture = new Texture("data/arrow/arrowend.png");
+		tailRegion = new TextureRegion(tailTexture, 0, 0, 32, 32);
+		
+		
+		originX = 1 / 48f * headTexture.getWidth() / 2f;
+		originY = 1 / 48f * headTexture.getHeight() / 2f;
+		textureWidth = 1 / 48f * 32; // texture is 64 pixels big.
+		textureHeight = 1 / 48f * 32;
+		
+		// Create a deep copy
+		this.points = new ArrayList<Vector2>();
+		for (Vector2 v : points) {
+			this.points.add(new Vector2(v));
+		}
+		tailPoint = this.points.get(0);
+		headPoint = this.points.get(points.size() - 1);
+
+		//dir = getDirectionVector();
+		dirTail = new Vector2(points.get(1).x - points.get(0).x, points.get(1).y - points.get(0).y);
+		dirHead = new Vector2(points.get(points.size() - 1).x - points.get(points.size() - 2).x, points.get(points.size() - 1).y - points.get(points.size() - 2).y);
+
+		BodyDef circleDef = new BodyDef();
+		circleDef.type = BodyType.DynamicBody;
+		circleDef.position.set(x, y);
+		circleDef.bullet = true; //circledef also has the angle!
+
+		// Create shape for that definition
+		body = world2.createBody(circleDef);
+		CircleShape circleShape = new CircleShape();
+		circleShape.setRadius(.20f);
+		body.setFixedRotation(false);
+		
+
+		// Unite them in one fixture object.
+		FixtureDef circleFixture = new FixtureDef();
+		circleFixture.shape = circleShape;
+		circleFixture.density = .3f;
+		circleFixture.friction = .5f;
+		circleFixture.restitution = .1f;
+
+		body.createFixture(circleFixture);
+
+		world2.setGravity(new Vector2(0, -9.8f));
+
+		circleShape.dispose();
+
+		body.applyForceToCenter(dirHead.scl(7f), false);
+		angleHead = Math.toDegrees(Math.atan2(dirHead.y,
+				dirHead.x)) - 175;
+		angleTail = Math.toDegrees(Math.atan2(dirTail.y,
+				dirTail.x)) - 175;
+	}
+	
+	
+	
+	public Arrow(ArrowData a, World world2) {
+		super(a.headPosition.x, a.headPosition.y, GHOST_WIDTH, GHOST_HEIGHT);
+		
+		color = new Color(0.63f,0.51f,0.40f,1);
+		gl20 =  new ImmediateModeRenderer20(false, true, 1);
+		headTexture = new Texture("data/arrow/arrowhead2.png");
+		headRegion = new TextureRegion(headTexture, 0, 0, 32, 32);
+		tailTexture = new Texture("data/arrow/arrowend.png");
+		tailRegion = new TextureRegion(tailTexture, 0, 0, 32, 32);
+		
+		
+		originX = 1 / 48f * headTexture.getWidth() / 2f;
+		originY = 1 / 48f * headTexture.getHeight() / 2f;
+		textureWidth = 1 / 48f * 32; // texture is 64 pixels big.
+		textureHeight = 1 / 48f * 32;
+		
+		// Copy data over -----------------------
+		strip = a.strip;
+		this.points = new ArrayList<Vector2>();
+		for (Vector2 v : a.points) {
+			this.points.add(new Vector2(v));
+		}
+		tailPoint = this.points.get(0);
+		headPoint = this.points.get(points.size() - 1);
+		
+		//dir = getDirectionVector();
+		dirTail = new Vector2(points.get(1).x - points.get(0).x, points.get(1).y - points.get(0).y);
+		dirHead = new Vector2(points.get(points.size() - 1).x - points.get(points.size() - 2).x, points.get(points.size() - 1).y - points.get(points.size() - 2).y);
+
+		
+		
+		Vector2[] vertices = new Vector2[4];
+		vertices[0] = (new Vector2(-1.4f,0));
+        vertices[1] = (new Vector2(0,-0.1f));
+        vertices[2] = (new Vector2(0.6f,0f));
+        vertices[3] = (new Vector2(0,0.1f));
+		
+		circleDef = new BodyDef();
+		circleDef.type = BodyType.DynamicBody;
+		circleDef.position.set(a.headPosition.x, a.headPosition.y);
+		circleDef.bullet = true; //circledef also has the angle!
+		circleDef.angularDamping = 1.5f;
+		
+		angleHead = Math.toDegrees(Math.atan2(dirHead.y,
+				dirHead.x));
+		initialAngle = (float) angleHead;
+		circleDef.angle = (float) Math.toRadians(Math.toDegrees(Math.atan2(dirHead.y,
+				dirHead.x)));
+		
+		angle = (float)Math.toRadians(initialAngle);
+		body = world2.createBody(circleDef);
+		
+		// Create shape for that definition
+		PolygonShape shape = new PolygonShape();
+		shape.set(vertices);
+		
+		
+		
+//		CircleShape circleShape = new CircleShape();
+//		circleShape.setRadius(.20f);
+		body.setFixedRotation(false);
+		
+
+		// Unite them in one fixture object.
+		FixtureDef circleFixture = new FixtureDef();
+		circleFixture.shape = shape;
+		circleFixture.density = 1.0f;
+		circleFixture.friction = .5f;
+		circleFixture.restitution = .5f;
+
+
+		body.createFixture(circleFixture);
+		body.setUserData(this);
+		body.setAngularDamping(.5f);
+
+		world2.setGravity(new Vector2(0, -9.8f));
+
+		//circleShape.dispose();
+		shape.dispose();
+		Vector2 arrowTailPos = new Vector2(headPoint.x + .04f * -dirHead.x, headPoint.y + .04f* -dirHead.y);
+		float angle = (float) Math.atan2(dirHead.y, // in radians
+				dirHead.x);
+		body.setLinearVelocity(new Vector2( 10*(float)Math.cos(angle), 10*(float)Math.sin(angle)));
+		
+		//body.applyForceToCenter(dirHead.scl(9f), false);
+		
+		angleTail = Math.toDegrees(Math.atan2(dirTail.y,
+				dirTail.x)) - 175;
+		
+		angleTail = 90 - angleHead;
+	}
+	
+	public Vector2 getHeadDirection() {
+		Vector2 start = points.get(points.size() / 2);
+		Vector2 dir = new Vector2();
+		dir.set(points.get(points.size()/2 - 1)).sub(start);
+		dir.scl(-1);
+		return dir;
+		//return new Vector2(points.get(1).x - points.get(0).x, points.get(1).y - points.get(0).y);
+	}
+	
+	
+	public float normalize(Vector2 b) {
+		return (float)Math.sqrt(b.x * b.x + b.y * b.y);
+	}
+	
+	public void update(float deltaTime) {
+		if(freeFlight) {
+			float flightSpeed = normalize(body.getLinearVelocity());
+			float ang = body.getAngle();
+			Vector2 pointingDirection = new Vector2((float)Math.cos(angle), -(float)Math.sin(angle));
+			float flyinAngle = (float) Math.atan2(body.getLinearVelocity().y, // in radians
+					body.getLinearVelocity().x);
+			Vector2 flightDirection = new Vector2((float)Math.cos(flyinAngle), (float)Math.sin(flyinAngle));
+			float dot = flightDirection.dot(pointingDirection);
+			// .05 is drag
+			float dragForceMagnitude = (float) ((1-Math.abs(dot)) * flightSpeed * flightSpeed * .05 * body.getMass());
+		//	Vector2 arrowTailPos = new Vector2(headPoint.x + .04f * -dirHead.x, headPoint.y + .04f* -dirHead.y);
+			Vector2 arrowTailPos = body.getWorldPoint(new Vector2(-1.4f, 0));
+			body.applyForce(new Vector2(dragForceMagnitude * -flightDirection.x, dragForceMagnitude*-flightDirection.y),arrowTailPos, true);
+		
+		
+		}
+		
+		/*if(freeFlight) {
+			flyingAngle =(float) Math.atan2(body.getLinearVelocity().y, // in radians
+					body.getLinearVelocity().x);
+			circleDef.angle = (float) flyingAngle;
+		}
+		else {
+			flyingAngle = body.getAngle(); // radians
+		}*/
+		flyingAngle = body.getAngle();
+		Vector2 diff = new Vector2();
+		diff.set(body.getPosition()).sub(headPoint);
+		
+		translateStrip(diff, flyingAngle);
+	}
+	
+	float angle = 0f;
+	public void translateStrip(Vector2 diff, double a) { //in radians
+		
+		// Translates the arrow body
+		angle = (float) (a - angle);
+		for(int i = 0; i < strip.array.size - 1; i++) // -1 because then it gets distorted...
+		{
+			Vector2 v = strip.array.get(i);
+			v.add(diff);
+		}
+		
+		// This is used to translate the original points (and our pngs of the arrowhead etc)
+		for(int i = 0; i < points.size(); i++)
+		{
+			Vector2 v = points.get(i);
+			v.add(diff);
+		}
+	
+		
+//		for(int i = 0; i < strip.array.size - 1; i++) {
+//			Vector2 v = strip.array.get(i);
+//			v.rotate((float) Math.toDegrees(angle));
+//		}
+//		for(int i = 0; i < points.size(); i++) {
+//			Vector2 v = points.get(i);
+//			v.rotate((float) Math.toDegrees(angle));
+//		}
+		Vector2 center = new Vector2(headPoint);
+		//Vector2 center = body.getPosition();
+		// Rotation:
+		for(int i = 0; i < strip.array.size; i++) {
+			Vector2 v = strip.array.get(i);
+			Vector2 point = new Vector2(v);
+			v.x = (float) (center.x + (point.x-center.x)*Math.cos(angle) - (point.y-center.y)*Math.sin(angle));
+			v.y = (float) (center.y + (point.x-center.x)*Math.sin(angle) + (point.y-center.y)*Math.cos(angle));
+		}
+		for(int i = 0; i < points.size(); i++) {
+			Vector2 v = points.get(i);
+			Vector2 point = new Vector2(v);
+			v.x = (float) (center.x + (point.x-center.x)*Math.cos(angle) - (point.y-center.y)*Math.sin(angle));
+			v.y = (float) (center.y + (point.x-center.x)*Math.sin(angle) + (point.y-center.y)*Math.cos(angle));
+		} 
+		angle = (float) a;
+	}
+
+	public Vector2 getDirectionVector() {
+		Gdx.app.log("arrow", "data size " + points.size());
+		Vector2 start = new Vector2(points.get(points.size() - 1)); // this is
+																	// the
+																	// middle of
+																	// the
+																	// outline,
+																	// the
+																	// arrowhead
+		float dirX;
+		float dirY;
+		Vector2 dir = new Vector2();
+		for (int i = 1; i < points.size() - 1; i++) {
+			Vector2 dir2 = new Vector2(points.get(i));
+			dir2.sub(start);
+			dir2.scl(-1);
+			dir.add(dir2);
+		}
+		dir.div(points.size() / 2 - 1);
+		dir.nor();
+		return dir;
+	}
+	
+	public void draw(GameCamera cam, SpriteBatch batch) {
+		batch.draw(headRegion, headPoint.x - .3f, headPoint.y - .35f, originX, originY, textureWidth, textureHeight, 1, 1, (float)(0 + Math.toDegrees(flyingAngle) + 180), false);
+		batch.draw(tailRegion, tailPoint.x - .3f, tailPoint.y - .35f, originX, originY, textureWidth, textureHeight, 1, 1, (float)(angleTail + Math.toDegrees(flyingAngle)), false);
+	}
+	
+	public void drawStrip(GameCamera cam) {
+		Array<Vector2> tristrip = strip.array;
+		if (tristrip.size <= 0)
+			return;
+		gl20.begin(cam.combined, GL20.GL_TRIANGLE_STRIP);
+		for (int i = 0; i < tristrip.size; i++) {
+			if (i == strip.batchSize) {
+				gl20.end();
+				gl20.begin(cam.combined, GL20.GL_TRIANGLE_STRIP);
+			}
+			Vector2 point = tristrip.get(i);
+			gl20.color(color.r, color.g, color.b, color.a);
+			gl20.vertex(point.x, point.y, 0f);
+		}
+		gl20.end();
+	}
+}

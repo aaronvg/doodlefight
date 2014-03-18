@@ -45,6 +45,11 @@ import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.ChainShape;
 import com.badlogic.gdx.physics.box2d.CircleShape;
+import com.badlogic.gdx.physics.box2d.Contact;
+import com.badlogic.gdx.physics.box2d.ContactImpulse;
+import com.badlogic.gdx.physics.box2d.ContactListener;
+import com.badlogic.gdx.physics.box2d.Fixture;
+import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.Shape;
 import com.badlogic.gdx.physics.box2d.World;
@@ -82,7 +87,7 @@ public class GameWorld {
 
 	public boolean collision = false;
 
-	public static final Vector2 gravity = new Vector2(0, -12);
+	public static final Vector2 gravity = new Vector2(0, -14.8f);
 
 	public final Ghosty bob;
 	public final List<Coin> coins;
@@ -122,7 +127,11 @@ public class GameWorld {
 		rand = new Random();
 		generateLevel(); // sets up box2dWorld.
 		this.bob = new Ghosty(8, 7, world2);
-
+		
+		world2.setContactListener(new CustomContactListener());
+		
+		
+		
 		this.heightSoFar = 0;
 		this.score = 0;
 		this.state = WORLD_STATE_RUNNING;
@@ -140,7 +149,7 @@ public class GameWorld {
 	private void generateLevel() {
 		// Physics setup ---------------------------
 		// Creates Box2D world where we will put all our collision objects in.
-		world2 = new World(new Vector2(0, 0), false);
+		world2 = new World(gravity, false);
 
 		// Load more collision objects from the tiled map into our box2D
 		// simulation/world.
@@ -166,13 +175,16 @@ public class GameWorld {
 			createArrow(a);
 		}
 		updateBob(deltaTime, accelX);
-		for(Arrow b : arrows) {
-			b.update(deltaTime);
-		}
+		
+		
 		if (bob.state != Bob.BOB_STATE_HIT)
 			checkCollisions();
 		checkGameOver();
 		world2.step(1 / 60f, 4, 2); // 6 2
+		world2.clearForces();
+		for(Arrow b : arrows) {
+			b.update(deltaTime);
+		}
 
 	}
 
@@ -438,7 +450,7 @@ public class GameWorld {
 				// bd.type = BodyType.DynamicBody;
 				Body body = world.createBody(bd);
 				body.createFixture(shape, 1);
-
+				body.setUserData(shape);
 				bodies.add(body);
 
 				shape.dispose();

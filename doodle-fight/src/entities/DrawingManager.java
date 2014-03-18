@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import mdesl.swipe.SwipeHandler;
 import mdesl.swipe.mesh.SwipeTriStrip;
 
+import Helpers.Strip;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.Color;
@@ -56,8 +58,8 @@ public class DrawingManager {
 		tris.thickness = .1f;
 		// a swipe handler with max # of input points to be kept alive
 		swipe = new SwipeHandler(10);
-		swipe.minDistance = 50; // 10
-		swipe.initialDistance = 50; // 10
+		swipe.minDistance = 30; // 10
+		swipe.initialDistance = 30; // 10
 		multiplexer.addProcessor(swipe);
 		
 		//Gdx.input.setInputProcessor(swipe);
@@ -67,7 +69,7 @@ public class DrawingManager {
 		newPath = true;
 		currPoints = new ArrayList<Vector2>();
 		paths = new ArrayList<Line>();
-
+		
 		shaper = new ShapeRenderer();
 		shaper.setColor(Color.BLACK);
 
@@ -75,7 +77,8 @@ public class DrawingManager {
 		smoothLine2 = new ArrayList<Vector2>();
 		arrows = new ArrayList<ArrowData>();
 
-		color = new Color(0.63f, 0.51f, 0.40f, 1);
+		//color = new Color(0.63f, 0.51f, 0.40f, 1);
+		color = Color.BLACK;
 	}
 
 	public void update(GameCamera cam) {
@@ -83,7 +86,7 @@ public class DrawingManager {
 
 		// If input is touched, we're drawing the current path.
 		if (Gdx.input.isTouched()
-				&& (Gdx.input.getX() < Gdx.graphics.getWidth() / 3)) {
+				&& cam.isDrawingArea(Gdx.input.getX(), Gdx.input.getY())) {
 			newArrow = true;
 			// Start drawing path. save it.
 			currPoints = swipe.input2();
@@ -120,7 +123,8 @@ public class DrawingManager {
 		if (currPoints.size() >= 2) {
 			batchSize = generate(currPoints, 1);
 			b = generate(currPoints, -1);
-			draw(cam);
+			if(Gdx.input.isTouched())
+				draw(cam);
 		}
 	}
 
@@ -315,16 +319,7 @@ public class DrawingManager {
 		return tristrip.size - c;
 	}
 
-	public class Strip {
-		public int batchSize;
-		public Array<Vector2> array;
-
-		public Strip(int b, Array<Vector2> array) {
-			batchSize = b;
-			this.array = array;
-		}
-
-	}
+	
 
 	public class ArrowData {
 		public Strip strip;

@@ -2,12 +2,9 @@
 <qualifiedTypeNameHistroy>
 <fullyQualifiedTypeName name="android.view.WindowManager"/>
 <fullyQualifiedTypeName name="com.badlogic.gdx.graphics.OrthographicCamera"/>
-<fullyQualifiedTypeName name="com.badlogic.gdx.InputProcessor"/>
 <fullyQualifiedTypeName name="lineDrawing.LineDrawing"/>
 <fullyQualifiedTypeName name="com.badlogic.gdx.graphics.g2d.SpriteBatch"/>
-<fullyQualifiedTypeName name="entities.DrawingManager"/>
 <fullyQualifiedTypeName name="com.badlogic.gdx.graphics.Color"/>
-<fullyQualifiedTypeName name="com.badlogic.gdx.utils.Array"/>
 <fullyQualifiedTypeName name="com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer20"/>
 <fullyQualifiedTypeName name="entities.GameCamera"/>
 <fullyQualifiedTypeName name="com.badlogic.gdx.graphics.GL10"/>
@@ -15,6 +12,20 @@
 <fullyQualifiedTypeName name="mdesl.swipe.simplify.ResolverCopy"/>
 <fullyQualifiedTypeName name="java.util.ArrayList"/>
 <fullyQualifiedTypeName name="gameWorld.WorldRenderer"/>
+<fullyQualifiedTypeName name="gameWorld.Arrow"/>
+<fullyQualifiedTypeName name="entities.DrawingManager.ArrowData"/>
+<fullyQualifiedTypeName name="entities.DrawingManager.Strip"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.utils.Array"/>
+<fullyQualifiedTypeName name="entities.Light"/>
 <fullyQualifiedTypeName name="com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.input.GestureDetector.GestureListener"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.math.MathUtils"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.InputProcessor"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.utils.Timer"/>
+<fullyQualifiedTypeName name="entities.DrawingManager"/>
+<fullyQualifiedTypeName name="Helpers.Strip"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.physics.box2d.ContactListener"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.physics.box2d.Body"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.physics.box2d.Shape"/>
 <fullyQualifiedTypeName name="com.badlogic.gdx.Gdx"/>
 </qualifiedTypeNameHistroy>

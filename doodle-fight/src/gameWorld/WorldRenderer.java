@@ -181,8 +181,8 @@ public class WorldRenderer {
 		shapeRender.end();
 		batch = (SpriteBatch) renderer.getSpriteBatch();
 		renderer.setView(cam.combined, cam.position.x - (100), cam.position.y
-				- (20 * cam.zoom), cam.viewportWidth + 100, cam.viewportWidth
-				+ 40 * cam.zoom);
+				- (100), cam.viewportWidth + 100, cam.viewportWidth
+				+ 100);
 
 		renderer.render();
 
